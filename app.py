@@ -5,10 +5,6 @@ import tempfile
 import os
 from gtts import gTTS
 from groq import Groq
-
-# ─────────────────────────────────────────────
-# Page config
-# ─────────────────────────────────────────────
 st.set_page_config(page_title="VoxAI", page_icon="🎙️", layout="centered")
 
 st.markdown("""
@@ -18,9 +14,9 @@ st.markdown("""
 html, body, [class*="css"] {
     font-family: 'Syne', sans-serif;
     background-color: #FFFFFF;
-    color: #f0f0f5;
+    color: #1a1a2e;
 }
-.stApp { background-color: #080810; }
+.stApp { background-color: #FFFFFF; }
 
 .vox-header { text-align: center; padding: 2.5rem 0 1.5rem; }
 .vox-title {
@@ -31,12 +27,12 @@ html, body, [class*="css"] {
 }
 .vox-sub {
     font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
-    color: rgba(255,255,255,0.25); margin-top: 4px;
+    color: rgba(0,0,0,0.35); margin-top: 4px;
 }
-.vox-divider { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 1.5rem 0; }
+.vox-divider { border: none; border-top: 1px solid rgba(0,0,0,0.1); margin: 1.5rem 0; }
 .section-label {
     font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase;
-    color: rgba(255,255,255,0.3); margin-bottom: 0.5rem; font-weight: 600;
+    color: rgba(0,0,0,0.4); margin-bottom: 0.5rem; font-weight: 600;
 }
 .bubble-user { display: flex; justify-content: flex-end; margin: 8px 0; }
 .bubble-user span {
@@ -47,8 +43,8 @@ html, body, [class*="css"] {
 }
 .bubble-ai { display: flex; justify-content: flex-start; margin: 8px 0; }
 .bubble-ai span {
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09);
-    color: #e2e8f0; padding: 10px 18px; border-radius: 20px 20px 20px 4px;
+    background: #f1f5f9; border: 1px solid rgba(0,0,0,0.08);
+    color: #1e293b; padding: 10px 18px; border-radius: 20px 20px 20px 4px;
     max-width: 78%; font-size: 14px; line-height: 1.6;
 }
 .stButton > button {
@@ -59,60 +55,50 @@ html, body, [class*="css"] {
 }
 .stButton > button:hover { opacity: 0.85 !important; border: none !important; }
 .stTextInput > div > div > input {
-    background: rgba(255,255,255,0.05) !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
-    border-radius: 10px !important; color: #f0f0f5 !important;
+    background: #f8fafc !important;
+    border: 1px solid rgba(0,0,0,0.12) !important;
+    border-radius: 10px !important; color: #1a1a2e !important;
     font-family: 'Syne', sans-serif !important; font-size: 14px !important;
 }
 div[data-testid="stAudioInput"] {
-    background: rgba(255,255,255,0.03) !important;
-    border: 1px solid rgba(255,255,255,0.09) !important;
+    background: #f8fafc !important;
+    border: 1px solid rgba(0,0,0,0.1) !important;
     border-radius: 14px !important; padding: 12px !important;
 }
 .tip-box {
-    background: rgba(167,139,250,0.08);
-    border: 1px solid rgba(167,139,250,0.2);
+    background: rgba(124,58,237,0.06);
+    border: 1px solid rgba(124,58,237,0.2);
     border-radius: 10px; padding: 10px 16px;
-    font-size: 12px; color: rgba(255,255,255,0.5);
+    font-size: 12px; color: rgba(0,0,0,0.55);
     margin-bottom: 1rem; line-height: 1.7;
 }
 .transcript-preview {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: #f1f5f9;
+    border: 1px solid rgba(0,0,0,0.08);
     border-radius: 10px; padding: 12px 16px;
-    font-size: 13px; color: rgba(255,255,255,0.7);
+    font-size: 13px; color: rgba(0,0,0,0.75);
     margin: 8px 0 12px; font-style: italic;
 }
 .vox-footer {
-    text-align: center; font-size: 10px; color: rgba(255,255,255,0.15);
+    text-align: center; font-size: 10px; color: rgba(0,0,0,0.3);
     letter-spacing: 2px; text-transform: uppercase; padding: 2rem 0 1rem;
 }
 #MainMenu, footer, header { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
-
-# ─────────────────────────────────────────────
-# Constants
-# ─────────────────────────────────────────────
 SYSTEM_PROMPT = (
     "You are a helpful, friendly voice assistant. "
     "Keep responses concise and conversational — ideally 1–3 sentences — "
     "since they will be read aloud. Be warm, helpful, and direct."
 )
-
-# Noise/junk phrases Whisper hallucinates on silence
 JUNK_PHRASES = {
     "", "you", "the", "and", "i", "a", "an", "to", "of", "is", "it",
     "hello", "hi", "hey", "bye", "okay", "ok", "hmm", "um", "uh",
     "thank you", "thanks", "hello.", "hi.", "hey.", "bye.", "ok.",
 }
 
-MIN_WORDS = 2          # require at least 2 real words
-MIN_CHARS = 6          # require at least 6 characters
-
-# ─────────────────────────────────────────────
-# Helpers
-# ─────────────────────────────────────────────
+MIN_WORDS = 2         
+MIN_CHARS = 6 
 def is_valid_transcript(text: str) -> bool:
     """Filter out Whisper hallucinations and noise."""
     clean = text.strip().lower().rstrip(".,!?")
@@ -155,7 +141,7 @@ def transcribe_audio(audio_bytes: bytes, groq_key: str) -> str:
             result = client.audio.transcriptions.create(
                 file=("recording.wav", f, "audio/wav"),
                 model="whisper-large-v3-turbo",
-                language="en",           # ← force English, stops random language hallucinations
+                language="en",           
                 prompt="User is speaking a clear command or question in English.",  # ← context hint
             )
         return result.text.strip()
@@ -169,31 +155,18 @@ def tts_bytes(text: str) -> bytes:
     tts.write_to_fp(buf)
     buf.seek(0)
     return buf.read()
-
-
-# ─────────────────────────────────────────────
-# Header
-# ─────────────────────────────────────────────
 st.markdown("""
 <div class="vox-header">
     <div class="vox-title">VOXAI</div>
     <div class="vox-sub">Voice · Intelligence · Conversation</div>
 </div>
 """, unsafe_allow_html=True)
-
-# ─────────────────────────────────────────────
-# Load API keys from Streamlit Secrets
-# ─────────────────────────────────────────────
 try:
     openrouter_key = st.secrets["OPENROUTER_API_KEY"]
     groq_key = st.secrets["GROQ_API_KEY"]
 except KeyError:
     openrouter_key = ""
     groq_key = ""
-
-# ─────────────────────────────────────────────
-# Sidebar
-# ─────────────────────────────────────────────
 with st.sidebar:
     st.markdown("### ⚙️ Settings")
     st.success("🔑 API keys loaded" if openrouter_key and groq_key else "⚠️ API keys missing in Secrets")
@@ -209,26 +182,18 @@ with st.sidebar:
     if st.button("🗑️ Clear conversation"):
         st.session_state["history"] = []
         st.rerun()
-
-# ─────────────────────────────────────────────
-# Session state
-# ─────────────────────────────────────────────
 if "history" not in st.session_state:
     st.session_state["history"] = []
 if "pending_audio" not in st.session_state:
     st.session_state["pending_audio"] = None
-
-# ─────────────────────────────────────────────
-# Gate on keys
-# ─────────────────────────────────────────────
 if not openrouter_key or not groq_key:
     st.markdown("""
-    <div style="text-align:center; padding:3rem 1rem; color:rgba(255,255,255,0.35);">
+    <div style="text-align:center; padding:3rem 1rem; color:rgba(0,0,0,0.4);">
         <div style="font-size:2.5rem; margin-bottom:1rem;">⚠️</div>
         <div style="font-size:14px; line-height:1.8;">
             API keys not found. Add them in<br>
-            <strong style="color:rgba(255,255,255,0.6)">Streamlit Cloud → App Settings → Secrets</strong><br><br>
-            <code style="background:rgba(255,255,255,0.08);padding:8px 14px;border-radius:8px;font-size:13px;">
+            <strong style="color:#4f46e5">Streamlit Cloud → App Settings → Secrets</strong><br><br>
+            <code style="background:#f1f5f9;padding:8px 14px;border-radius:8px;font-size:13px;">
             OPENROUTER_API_KEY = "sk-or-v1-..."<br>
             GROQ_API_KEY = "gsk_..."
             </code>
@@ -236,10 +201,6 @@ if not openrouter_key or not groq_key:
     </div>
     """, unsafe_allow_html=True)
     st.stop()
-
-# ─────────────────────────────────────────────
-# Chat history
-# ─────────────────────────────────────────────
 if st.session_state["history"]:
     for msg in st.session_state["history"]:
         if msg["role"] == "user":
@@ -249,19 +210,15 @@ if st.session_state["history"]:
     st.markdown('<hr class="vox-divider">', unsafe_allow_html=True)
 else:
     st.markdown("""
-    <div style="text-align:center;padding:2rem 0;color:rgba(255,255,255,0.2);font-size:13px;">
+    <div style="text-align:center;padding:2rem 0;color:rgba(0,0,0,0.3);font-size:13px;">
         Say something or type below to begin...
     </div>""", unsafe_allow_html=True)
-
-# ─────────────────────────────────────────────
-# Voice input
-# ─────────────────────────────────────────────
 st.markdown('<div class="section-label">🎤 Voice input</div>', unsafe_allow_html=True)
 
 st.markdown("""
 <div class="tip-box">
-  🟢 <b>Click mic</b> to start &nbsp;→&nbsp; speak your message &nbsp;→&nbsp; <b>click mic again</b> to stop<br>
-  ⚠️ Wait for the waveform to appear before speaking. Speak clearly for best results.
+   <b>Click mic</b> to start &nbsp;→&nbsp; speak your message &nbsp;→&nbsp; <b>click mic again</b> to stop<br>
+   Wait for the waveform to appear before speaking. Speak clearly for best results.
 </div>
 """, unsafe_allow_html=True)
 
@@ -289,16 +246,14 @@ if audio_value is not None:
         except Exception as e:
             st.error(f"Transcription failed: {e}")
             st.stop()
-
-    # ── Show what was heard + confirm before sending ──
     if not user_text or not is_valid_transcript(user_text):
-        st.warning(f"🔇 Heard: **\"{user_text}\"** — too short or unclear. Please try again with a full sentence.")
+        st.warning(f" Heard: **\"{user_text}\"** — too short or unclear. Please try again with a full sentence.")
     else:
         st.markdown(f'<div class="transcript-preview">📝 Heard: <b>"{user_text}"</b></div>', unsafe_allow_html=True)
 
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("✅ Send this", key="confirm_send"):
+            if st.button(" Send this", key="confirm_send"):
                 st.session_state["history"].append({"role": "user", "content": user_text})
                 with st.spinner("Thinking..."):
                     try:
@@ -312,11 +267,8 @@ if audio_value is not None:
             if st.button("🔄 Re-record", key="rerecord"):
                 st.rerun()
 
-# ─────────────────────────────────────────────
-# Text input fallback
-# ─────────────────────────────────────────────
 st.markdown('<hr class="vox-divider">', unsafe_allow_html=True)
-st.markdown('<div class="section-label">✍️ Or type your message</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-label"> Or type your message</div>', unsafe_allow_html=True)
 col1, col2 = st.columns([5, 1])
 with col1:
     text_input = st.text_input("msg", placeholder="Ask me anything...", label_visibility="collapsed")
