@@ -171,13 +171,13 @@ with st.sidebar:
     st.markdown("### ⚙️ Settings")
     st.success("🔑 API keys loaded" if openrouter_key and groq_key else "⚠️ API keys missing in Secrets")
     st.markdown("---")
-    st.markdown("**🌐 Language**")
+    st.markdown("*🌐 Language*")
     lang = st.selectbox("Language", ["en", "hi", "te", "ta", "fr", "es", "de", "ja", "ko", "zh"],
                         label_visibility="collapsed")
     lang_names = {"en":"English","hi":"Hindi","te":"Telugu","ta":"Tamil",
                   "fr":"French","es":"Spanish","de":"German","ja":"Japanese",
                   "ko":"Korean","zh":"Chinese"}
-    st.caption(f"Transcribing in: **{lang_names.get(lang, lang)}**")
+    st.caption(f"Transcribing in: *{lang_names.get(lang, lang)}*")
     st.markdown("---")
     if st.button("🗑️ Clear conversation"):
         st.session_state["history"] = []
@@ -247,7 +247,7 @@ if audio_value is not None:
             st.error(f"Transcription failed: {e}")
             st.stop()
     if not user_text or not is_valid_transcript(user_text):
-        st.warning(f" Heard: **\"{user_text}\"** — too short or unclear. Please try again with a full sentence.")
+        st.warning(f" Heard: *\"{user_text}\"* — too short or unclear. Please try again with a full sentence.")
     else:
         st.markdown(f'<div class="transcript-preview">📝 Heard: <b>"{user_text}"</b></div>', unsafe_allow_html=True)
 
