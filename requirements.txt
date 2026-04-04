@@ -2,3 +2,7 @@ streamlit
 gtts
 requests
 groq
+speechbrain
+torch
+torchaudio
+pypdf
